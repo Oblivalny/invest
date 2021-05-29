@@ -101,8 +101,8 @@ class Users(Base):
         return "<Good('%s','%s')>" % (self.telegram_id, self.telegram_chat_id)
 
 
-def connect(user, pwd, host='localhost', echo=True):
-    return create_engine(f"""mysql+pymysql://{user}:{pwd}@{host}/test""", echo=echo, pool_pre_ping=True)
+def connect(user, pwd, db='invest_bot', host='localhost', echo=True):
+    return create_engine(f"""mysql+pymysql://{user}:{pwd}@{host}/{db}""", echo=echo, pool_pre_ping=True)
 
 
 def migration(engine):

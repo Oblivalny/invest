@@ -50,11 +50,12 @@ class Model(object):
         X_test = data.loc[test_index:].drop(["Adj Close"], axis=1)
         y_test = data.loc[test_index:]["Adj Close"]
 
+        # print(X_train.shape, y_train.shape, X_test.shape, y_test.shape)
         return X_train, X_test, y_train, y_test
 
     def XGB_forecast(self, scale=1.96):
         # исходные данные
-        X_train, X_test, y_train, y_test = self.prepare_data(self.data)
+        X_train, X_test, y_train, y_test = self.prepare_data()
         dtrain = xgb.DMatrix(X_train, label=y_train)
         dtest = xgb.DMatrix(X_test)
 
@@ -68,10 +69,11 @@ class Model(object):
         trees = 1000
 
         # прогоняем на кросс-валидации с метрикой rmse
-        cv = xgb.cv(params, dtrain, metrics=('rmse'), verbose_eval=False, nfold=5, show_stdv=False, num_boost_round=trees)
+        cv = xgb.cv(params, dtrain, metrics=('rmse'), verbose_eval=False,
+                    nfold=5, show_stdv=False, num_boost_round=trees)
 
         # обучаем xgboost с оптимальным числом деревьев, подобранным на кросс-валидации
-        bst = xgb.train(params, dtrain, num_boost_round=cv['test-rmse-mean'].argmin())
+        self.bst = xgb.train(params, dtrain, num_boost_round=cv['test-rmse-mean'].argmin())
 
         # можно построить кривые валидации
         #     cv.plot(y=['test-mae-mean', 'train-mae-mean'])
@@ -88,12 +90,12 @@ class Model(object):
         # plt.grid(True)
 
         # и на тестовом
-        prediction_test = bst.predict(dtest)
-        lower = prediction_test - scale * deviation
-        upper = prediction_test + scale * deviation
+        prediction_test = self.bst.predict(dtest)
+        # lower = prediction_test - scale * deviation
+        # upper = prediction_test + scale * deviation
 
-        Anomalies = np.array([np.NaN] * len(y_test))
-        Anomalies[y_test < lower] = y_test[y_test < lower]
+        # Anomalies = np.array([np.NaN] * len(y_test))
+        # Anomalies[y_test < lower] = y_test[y_test < lower]
 
         # plt.figure(figsize=(25, 10))
         # plt.plot(prediction_test, label="prediction")
@@ -107,11 +109,8 @@ class Model(object):
         # plt.grid(True)
         # plt.legend()
 
-        self.score(mean_squared_error(y_test, prediction_test))
-
+        self.score = mean_squared_error(y_test, prediction_test)
         df_pred = self.prepare_data(train=False)
         df_pred = xgb.DMatrix(df_pred)
-
-        bst.predict(df_pred)
-        pred = list(bst.predict(df_pred))
-        pred.reverse()
+        self.pred = list(self.bst.predict(df_pred))
+        self.pred.reverse()

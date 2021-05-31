@@ -24,7 +24,7 @@ class Assets(object):
         self.model = Model(data, lag_start, lag_end)
         self.model.XGB_forecast()
         prediction = self.model.pred
-        self.balance = assets_cnt*prediction[-1]
+        self.balance = self.get_balance(prediction, self.period_holding)
 
     def save_favorite_assets(self, session, user_id):
 
@@ -35,3 +35,33 @@ class Assets(object):
 
         session.add(new_favorite_assets)
         session.commit()
+
+    def get_balance(predict, holding):
+        result = []
+
+        i = 0
+        j = 0
+        iter_sum = 0
+        prev_value = list[0]
+        iter = round(len(predict) / holding) - 1
+
+        for e in list:
+            iter_sum = iter_sum + (e - prev_value)
+            prev_value = e
+
+            # print(e)
+            if i < iter:
+                i = i + 1
+            else:
+                i = 0
+                result.append(iter_sum)
+                iter_sum = 0
+                # print('')
+
+            j = j + 1
+
+            if j == len(predict):
+                result.append(iter_sum)
+
+        balance = sum(result)
+        return balance, result

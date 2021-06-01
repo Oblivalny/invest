@@ -1,7 +1,6 @@
 from sklearn.metrics import mean_squared_error
 import xgboost as xgb
 import pandas as pd
-import numpy as np
 
 
 class Model(object):

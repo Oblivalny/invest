@@ -1,11 +1,11 @@
 from telebot import types
 import telebot
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from src.app.Assets import Assets
 from config.config import db_config
 from src.db.db_connect import DataBase
-import datetime
+
 
 class InputParms():
     start_strategy = ''
@@ -83,8 +83,6 @@ def helpCmd(message):
     bot.send_message(message.from_user.id, f"""А вот и прогноз  {test.model.pred}""")
 
 
-
-
 def getParamsCmd(message):
     bot.send_message(message.from_user.id, input_parms.get_string())
 
@@ -97,7 +95,7 @@ def analyzeCmd(message):
 
 def get_start_strategy(message):
     try:
-        x = datetime.datetime.strptime(message.text, '%d.%m.%Y')
+        x = datetime.strptime(message.text, '%d.%m.%Y')
         input_parms.set_start_strategy(x)
         bot.send_message(message.from_user.id, "Дата окончания проверки стратегии:");
         bot.register_next_step_handler(message, get_end_strategy)
@@ -107,7 +105,7 @@ def get_start_strategy(message):
 
 def get_end_strategy(message):
     try:
-        x = datetime.datetime.strptime(message.text, '%d.%m.%Y')
+        x = datetime.strptime(message.text, '%d.%m.%Y')
         input_parms.set_end_strategy(x)
         bot.send_message(message.from_user.id, "Дата начала периода для удержания позиции:");
         bot.register_next_step_handler(message, get_start_period_calculation)
@@ -118,7 +116,7 @@ def get_end_strategy(message):
 
 def get_start_period_calculation(message):
     try:
-        x = datetime.datetime.strptime(message.text, '%d.%m.%Y')
+        x = datetime.strptime(message.text, '%d.%m.%Y')
         input_parms.set_start_period_calculation(x)
         bot.send_message(message.from_user.id, "Дата окончания периода для удержания позиции:");
         bot.register_next_step_handler(message, get_end_period_calculation)
@@ -129,7 +127,7 @@ def get_start_period_calculation(message):
 
 def get_end_period_calculation(message):
     try:
-        x = datetime.datetime.strptime(message.text, '%d.%m.%Y')
+        x = datetime.strptime(message.text, '%d.%m.%Y')
         input_parms.set_end_period_calculation(x)
         bot.send_message(message.from_user.id, "Период для удержания позиции:");
         bot.register_next_step_handler(message, get_period_holding)

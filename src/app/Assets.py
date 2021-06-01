@@ -49,16 +49,16 @@ class Assets(object):
     #     session.add(new_favorite_assets)
     #     session.commit()
 
-    def get_balance(predict, holding):
+    def get_balance(self, predict, holding):
         result = []
 
         i = 0
         j = 0
         iter_sum = 0
-        prev_value = list[0]
+        prev_value = predict[0]
         iter = round(len(predict) / holding) - 1
 
-        for e in list:
+        for e in predict:
             iter_sum = iter_sum + (e - prev_value)
             prev_value = e
 
@@ -67,7 +67,7 @@ class Assets(object):
                 i = i + 1
             else:
                 i = 0
-                result.append(iter_sum)
+                result.append(abs(iter_sum))
                 iter_sum = 0
                 # print('')
 

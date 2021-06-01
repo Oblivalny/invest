@@ -1,6 +1,9 @@
 from telebot import types
 import telebot
-
+from datetime import datetime, timedelta
+from src.app.Assets import Assets
+from config.config import db_config
+from src.db.db_connect import DataBase
 
 class InputParms():
     start_strategy = ''
@@ -47,6 +50,32 @@ def startCmd(message):
 
 def helpCmd(message):
     bot.send_message(message.from_user.id, "Чем я могу тебе помочь?")
+
+    tag = 'AACG'
+    start_strategy = datetime(2021, 4, 1, 0, 0, 0)
+    end_strategy = datetime(2021, 5, 1, 0, 0, 0)
+    period_calculation_start = datetime(2010, 4, 1, 0, 0, 0)
+    period_calculation_end = datetime(2021, 5, 1, 0, 0, 0)
+    period_holding = 2
+
+    test = Assets(
+        tag,
+        start_strategy,
+        end_strategy,
+        period_calculation_start,
+        period_calculation_end,
+        period_holding
+    )
+    db = DataBase(db_config['USER_mysql'],
+                  db_config['PW_mysql'],
+                  db_config['DB_mysql'],
+                  db_config['HOST_mysql'])
+
+    test.calculation_balance(db, 5)
+
+    bot.send_message(message.from_user.id, f"""А вот и прогноз  {test.model.pred}""")
+
+
 
 
 def getParamsCmd(message):

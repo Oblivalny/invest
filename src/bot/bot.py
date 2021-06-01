@@ -1,14 +1,17 @@
 from telebot import types
 import telebot
+
 from datetime import datetime, timedelta
 from src.app.Assets import Assets
 from config.config import db_config
 from src.db.db_connect import DataBase
+import datetime
 
 class InputParms():
     start_strategy = ''
     end_strategy = ''
-    period_calculation = ''
+    start_period_calculation = ''
+    end_period_calculation = ''
     period_holding = ''
 
     def set_start_strategy(self, start_strategy):
@@ -17,8 +20,11 @@ class InputParms():
     def set_end_strategy(self, end_strategy):
         self.end_strategy = end_strategy
 
-    def set_period_calculation(self, period_calculation):
-        self.period_calculation = period_calculation
+    def set_start_period_calculation(self, start_period_calculation):
+        self.start_period_calculation = start_period_calculation
+
+    def set_end_period_calculation(self, end_period_calculation):
+        self.end_period_calculation = end_period_calculation
 
     def set_period_holding(self, period_holding):
         self.period_holding = period_holding
@@ -26,7 +32,8 @@ class InputParms():
     def get_log(self):
         print(f'дата начала проверки стратегии: {self.start_strategy}')
         print(f'дата окончания проверки стратегии: {self.end_strategy}')
-        print(f'период данных для расчета: {self.period_calculation}')
+        print(f'дата начала периода для расчета: {self.start_period_calculation}')
+        print(f'дата окончания периода для расчета: {self.end_period_calculation}')
         print(f'период данных для удержания позиции: {self.period_holding}')
 
     def get_string(self):
@@ -34,13 +41,13 @@ class InputParms():
         parms.append('Текущие значения параметров:')
         parms.append(f'дата начала проверки стратегии: {self.start_strategy}')
         parms.append(f'дата окончания проверки стратегии: {self.end_strategy}')
-        parms.append(f'период данных для расчета: {self.period_calculation}')
+        parms.append(f'дата начала периода для расчета: {self.start_period_calculation}')
+        parms.append(f'дата окончания периода для расчета: {self.end_period_calculation}')
         parms.append(f'период данных для удержания позиции: {self.period_holding}')
         return '\n'.join(parms)
 
     def is_exists_all_parms(self):
-        return (self.start_strategy != '' and self.end_strategy != '' and
-                    self.period_calculation != '' and self.period_holding != '')
+        return (self.start_strategy != '' and self.end_strategy != '' and self.start_period_calculation != '' and self.end_period_calculation != '' and self.period_holding != '')
 
 
 def startCmd(message):
@@ -89,34 +96,63 @@ def analyzeCmd(message):
 
 
 def get_start_strategy(message):
-    input_parms.set_start_strategy(message.text)
-    bot.send_message(message.from_user.id, "Дата окончания проверки стратегии:");
-    bot.register_next_step_handler(message, get_end_strategy)
-
+    try:
+        x = datetime.datetime.strptime(message.text, '%d.%m.%Y')
+        input_parms.set_start_strategy(x)
+        bot.send_message(message.from_user.id, "Дата окончания проверки стратегии:");
+        bot.register_next_step_handler(message, get_end_strategy)
+    except ValueError:
+        bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
+        bot.register_next_step_handler(message, get_start_strategy)
 
 def get_end_strategy(message):
-    input_parms.set_end_strategy(message.text)
-    bot.send_message(message.from_user.id, "Период данных для расчета:");
-    bot.register_next_step_handler(message, get_period_calculation)
+    try:
+        x = datetime.datetime.strptime(message.text, '%d.%m.%Y')
+        input_parms.set_end_strategy(x)
+        bot.send_message(message.from_user.id, "Дата начала периода для удержания позиции:");
+        bot.register_next_step_handler(message, get_start_period_calculation)
+    except ValueError:
+        bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
+        bot.register_next_step_handler(message, get_end_strategy)
 
 
-def get_period_calculation(message):
-    input_parms.set_period_calculation(message.text)
-    bot.send_message(message.from_user.id, "Период данных для удержания позиции:")
-    bot.register_next_step_handler(message, get_period_holding)
+def get_start_period_calculation(message):
+    try:
+        x = datetime.datetime.strptime(message.text, '%d.%m.%Y')
+        input_parms.set_start_period_calculation(x)
+        bot.send_message(message.from_user.id, "Дата окончания периода для удержания позиции:");
+        bot.register_next_step_handler(message, get_end_period_calculation)
+    except ValueError:
+        bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
+        bot.register_next_step_handler(message, get_start_period_calculation)
+
+
+def get_end_period_calculation(message):
+    try:
+        x = datetime.datetime.strptime(message.text, '%d.%m.%Y')
+        input_parms.set_end_period_calculation(x)
+        bot.send_message(message.from_user.id, "Период для удержания позиции:");
+        bot.register_next_step_handler(message, get_period_holding)
+    except ValueError:
+        bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
+        bot.register_next_step_handler(message, get_end_period_calculation)
 
 
 def get_period_holding(message):
-    input_parms.set_period_holding(message.text)
-    bot.send_message(message.from_user.id, "Ввод параметров завершен.")
+    try:
+        x = int(message.text)
+        input_parms.set_period_holding(x)
+        bot.send_message(message.from_user.id, "Ввод параметров завершен.");
 
-    keyboard = types.InlineKeyboardMarkup()
-    key_yes = types.InlineKeyboardButton(text='Да', callback_data='yes')
-    keyboard.add(key_yes)
-    key_no = types.InlineKeyboardButton(text='Нет', callback_data='no')
-    keyboard.add(key_no)
-    bot.send_message(message.from_user.id, text='Выполнить анализ?', reply_markup=keyboard)
-
+        keyboard = types.InlineKeyboardMarkup()
+        key_yes = types.InlineKeyboardButton(text='Да', callback_data='yes')
+        keyboard.add(key_yes)
+        key_no = types.InlineKeyboardButton(text='Нет', callback_data='no')
+        keyboard.add(key_no)
+        bot.send_message(message.from_user.id, text='Выполнить анализ?', reply_markup=keyboard)
+    except ValueError:
+        bot.send_message(message.from_user.id, "Неверное значение. Ожидается число")
+        bot.register_next_step_handler(message, get_period_holding)
 
 def analyze(call_message):
     if (not input_parms.is_exists_all_parms()):
@@ -155,7 +191,3 @@ def get_text_messages(message):
         botCmds[message.text](message)
     else:
         bot.send_message(message.from_user.id, "Я тебя не понимаю. Напиши /help.")
-
-
-
-

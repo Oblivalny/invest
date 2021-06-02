@@ -1,6 +1,7 @@
 from telebot import types
 import telebot
 import matplotlib.pyplot as plt
+import numpy as np
 
 from datetime import datetime
 from src.app.Assets import Assets
@@ -88,6 +89,14 @@ def helpCmd(message):
     plt.savefig('plot.png')
 
     bot.send_photo(message.chat.id, open('plot.png','rb'))
+
+    stats = []
+    stats.append(f'Расширенная статистика')
+    stats.append(f'Математическое ожидание: {round(np.mean(test.model.pred),2)}')
+    stats.append(f'Дисперсия: {round(np.var(test.model.pred),2)}')
+
+    result = '\n'.join(stats)
+    bot.send_message(message.from_user.id, f'{result}')
 
 def getParamsCmd(message):
     bot.send_message(message.from_user.id, input_parms.get_string())

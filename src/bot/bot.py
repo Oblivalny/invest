@@ -1,5 +1,6 @@
 from telebot import types
 import telebot
+import matplotlib.pyplot as plt
 
 from datetime import datetime
 from src.app.Assets import Assets
@@ -82,6 +83,11 @@ def helpCmd(message):
 
     bot.send_message(message.from_user.id, f"""А вот и прогноз  {test.model.pred}""")
 
+    plt.plot(test.model.pred)
+    plt.ylabel('Prediction')
+    plt.savefig('plot.png')
+
+    bot.send_photo(message.chat.id, open('plot.png','rb'))
 
 def getParamsCmd(message):
     bot.send_message(message.from_user.id, input_parms.get_string())

@@ -36,7 +36,6 @@ class Assets(object):
         self.model.XGB_forecast()
         prediction = self.model.pred
         self.balance = self.get_balance(prediction, self.period_holding)
-        self.maximum_drawdown = self.get_maximum_drawdown(prediction)
         print(prediction)
 
 

@@ -63,7 +63,7 @@ class InputParms():
         if self.start_period_calculation == '':
             return False
 
-        if self.start_period_calculation < self.start_strategy or self.start_period_calculation > self.end_strategy:
+        if self.start_period_calculation > self.start_strategy or self.start_period_calculation > self.end_strategy:
             return False
 
         return True
@@ -75,19 +75,7 @@ class InputParms():
         if self.end_period_calculation == '':
             return False
 
-        if self.end_period_calculation < self.start_strategy or self.end_period_calculation > self.end_strategy:
-            return False
-
-        return True
-
-    def validate_start_end_period_calculation(self):
-        if not self.validate_start_period_calculation():
-            return False
-
-        if not self.validate_end_period_calculation():
-            return False
-
-        if self.start_period_calculation > self.end_period_calculation:
+        if self.end_period_calculation < self.start_strategy or self.end_period_calculation < self.end_strategy:
             return False
 
         return True
@@ -199,7 +187,7 @@ def get_end_strategy(message):
         bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
         bot.register_next_step_handler(message, get_end_strategy)
     except StartDateMoreEndDateError:
-        bot.send_message(message.from_user.id, "Дата окончания проверки должна быть больше даты начала "
+        bot.send_message(message.from_user.id, "Дата окончания проверки стратегии должна быть больше даты начала "
                                                "проверки стратегии")
         bot.register_next_step_handler(message, get_end_strategy)
 
@@ -218,8 +206,8 @@ def get_start_period_calculation(message):
         bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
         bot.register_next_step_handler(message, get_start_period_calculation)
     except DateOutsidePeriodError:
-        bot.send_message(message.from_user.id, "Дата начала периода для удержания позиции должна находиться внутри "
-                                               "периода проверки стратегии")
+        bot.send_message(message.from_user.id, "Дата начала периода для удержания позиции должна быть меньше периода "
+                                               "проверки стратегии")
         bot.register_next_step_handler(message, get_start_period_calculation)
 
 
@@ -231,21 +219,14 @@ def get_end_period_calculation(message):
         if not input_parms.validate_end_period_calculation():
             raise DateOutsidePeriodError
 
-        if not input_parms.validate_start_end_period_calculation():
-            raise StartDateMoreEndDateError
-
         bot.send_message(message.from_user.id, "Период для удержания позиции:");
         bot.register_next_step_handler(message, get_period_holding)
     except ValueError:
         bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
         bot.register_next_step_handler(message, get_end_period_calculation)
     except DateOutsidePeriodError:
-        bot.send_message(message.from_user.id, "Дата окончания периода для удержания позиции должна находиться внутри "
-                                               "периода проверки стратегии")
-        bot.register_next_step_handler(message, get_end_period_calculation)
-    except StartDateMoreEndDateError:
-        bot.send_message(message.from_user.id, "Дата окончания периода для удержания позиции должна быть больше даты "
-                                               "начала периода")
+        bot.send_message(message.from_user.id, "Период проверки стратегии должен находиться внутри периода для "
+                                               "удержания позиции")
         bot.register_next_step_handler(message, get_end_period_calculation)
 
 

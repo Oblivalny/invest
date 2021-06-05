@@ -150,6 +150,7 @@ def helpCmd(message):
     plt.plot(test.model.pred)
     plt.ylabel('Prediction')
     plt.savefig('plot.png')
+    plt.clf()
 
     bot.send_photo(message.chat.id, open('plot.png','rb'))
 

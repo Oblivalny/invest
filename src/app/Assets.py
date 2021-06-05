@@ -13,6 +13,7 @@ class Assets(object):
         self.period_calculation_end = period_calculation_end
         self.period_holding = period_holding
         self.balance = None
+        self.maximum_drawdown = None
         self.model = None
 
     def calculation_balance(self, db, assets_cnt):
@@ -36,6 +37,7 @@ class Assets(object):
         self.model.XGB_forecast()
         prediction = self.model.pred
         self.balance = self.get_balance(prediction, self.period_holding)
+        self.maximum_drawdown = self.get_maximum_drawdown(prediction)
         print(prediction)
 
 
@@ -78,3 +80,29 @@ class Assets(object):
 
         balance = sum(result)
         return balance, result
+
+    def get_maximum_drawdown(self, predict):
+        """ Максимальная просадка(MDD) – это показатель наибольшего падения цены актива от пика до минимума. """
+        iter_sum = 0
+        i = 0
+        prev_value = predict[0]
+        result = []
+
+        for vl in predict:
+
+            if vl <= prev_value:
+                iter_sum = iter_sum + (prev_value - vl)
+            elif iter_sum > 0:
+                result.append(iter_sum)
+                iter_sum = 0
+            else:
+                iter_sum = 0
+
+            prev_value = vl
+
+            i = i + 1
+
+            if i == len(predict):
+                result.append(iter_sum)
+
+        return max(result)

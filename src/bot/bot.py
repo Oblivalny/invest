@@ -160,6 +160,7 @@ def helpCmd(message):
     stats.append(f'Расширенная статистика')
     stats.append(f'Математическое ожидание: {round(np.mean(test.model.pred),2)}')
     stats.append(f'Дисперсия: {round(np.var(test.model.pred),2)}')
+    stats.append(f'Максимальная просадка: {round(test.maximum, 2)}')
 
     result = '\n'.join(stats)
     bot.send_message(message.from_user.id, f'{result}')

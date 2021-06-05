@@ -81,3 +81,13 @@ class DataBase(object):
             data['date'].append(val.date)
 
         return data
+
+    def select_top10_tags(self):
+        data = {'tag':[], 'company':[]}
+
+        for val in self.session.query(Assets).filter().limit(10).all():
+
+            data['tag'].append(val.tag)
+            data['company'].append(val.company)
+
+        return data

@@ -8,6 +8,18 @@ from src.app.Assets import Assets
 from config.config import db_config
 from src.db.db_connect import DataBase
 
+# define Python user-defined exceptions
+class Error(Exception):
+    """Базовый класс для других исключений"""
+    pass
+
+class DateOutsidePeriodError (Error):
+    """Возникает, когда входные параметры с датой находится вне целевого периода"""
+    pass
+
+class StartDateMoreEndDateError (Error):
+    """Возникает, когда входные параметры с датой находится вне целевого периода"""
+    pass
 
 class InputParms():
     start_strategy = ''
@@ -34,6 +46,51 @@ class InputParms():
 
     def set_tag(self, tag):
         self.tag = tag
+
+    def validate_start_end_strategy(self):
+        if self.start_strategy == '' or self.end_strategy == '':
+            return False
+
+        if self.start_strategy > self.end_strategy:
+            return False
+
+        return True
+
+    def validate_start_period_calculation(self):
+        if not self.validate_start_end_strategy():
+            return False
+
+        if self.start_period_calculation == '':
+            return False
+
+        if self.start_period_calculation < self.start_strategy or self.start_period_calculation > self.end_strategy:
+            return False
+
+        return True
+
+    def validate_end_period_calculation(self):
+        if not self.validate_start_end_strategy():
+            return False
+
+        if self.end_period_calculation == '':
+            return False
+
+        if self.end_period_calculation < self.start_strategy or self.end_period_calculation > self.end_strategy:
+            return False
+
+        return True
+
+    def validate_start_end_period_calculation(self):
+        if not self.validate_start_period_calculation():
+            return False
+
+        if not self.validate_end_period_calculation():
+            return False
+
+        if self.start_period_calculation > self.end_period_calculation:
+            return False
+
+        return True
 
     def get_log(self):
         print(f'дата начала проверки стратегии: {self.start_strategy}')
@@ -128,10 +185,18 @@ def get_end_strategy(message):
     try:
         x = datetime.strptime(message.text, '%d.%m.%Y')
         input_parms.set_end_strategy(x)
+
+        if not input_parms.validate_start_end_strategy():
+            raise StartDateMoreEndDateError
+
         bot.send_message(message.from_user.id, "Дата начала периода для удержания позиции:");
         bot.register_next_step_handler(message, get_start_period_calculation)
     except ValueError:
         bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
+        bot.register_next_step_handler(message, get_end_strategy)
+    except StartDateMoreEndDateError:
+        bot.send_message(message.from_user.id, "Дата окончания проверки должна быть больше даты начала "
+                                               "проверки стратегии")
         bot.register_next_step_handler(message, get_end_strategy)
 
 
@@ -139,10 +204,18 @@ def get_start_period_calculation(message):
     try:
         x = datetime.strptime(message.text, '%d.%m.%Y')
         input_parms.set_start_period_calculation(x)
+
+        if not input_parms.validate_start_period_calculation():
+            raise DateOutsidePeriodError
+
         bot.send_message(message.from_user.id, "Дата окончания периода для удержания позиции:");
         bot.register_next_step_handler(message, get_end_period_calculation)
     except ValueError:
         bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
+        bot.register_next_step_handler(message, get_start_period_calculation)
+    except DateOutsidePeriodError:
+        bot.send_message(message.from_user.id, "Дата начала периода для удержания позиции должна находиться внутри "
+                                               "периода проверки стратегии")
         bot.register_next_step_handler(message, get_start_period_calculation)
 
 
@@ -150,10 +223,25 @@ def get_end_period_calculation(message):
     try:
         x = datetime.strptime(message.text, '%d.%m.%Y')
         input_parms.set_end_period_calculation(x)
+
+        if not input_parms.validate_end_period_calculation():
+            raise DateOutsidePeriodError
+
+        if not input_parms.validate_start_end_period_calculation():
+            raise StartDateMoreEndDateError
+
         bot.send_message(message.from_user.id, "Период для удержания позиции:");
         bot.register_next_step_handler(message, get_period_holding)
     except ValueError:
         bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
+        bot.register_next_step_handler(message, get_end_period_calculation)
+    except DateOutsidePeriodError:
+        bot.send_message(message.from_user.id, "Дата окончания периода для удержания позиции должна находиться внутри "
+                                               "периода проверки стратегии")
+        bot.register_next_step_handler(message, get_end_period_calculation)
+    except StartDateMoreEndDateError:
+        bot.send_message(message.from_user.id, "Дата окончания периода для удержания позиции должна быть больше даты "
+                                               "начала периода")
         bot.register_next_step_handler(message, get_end_period_calculation)
 
 
@@ -200,7 +288,7 @@ def final_step_before_run_analyze(message, tag):
     keyboard.add(key_yes)
     key_no = types.InlineKeyboardButton(text='Нет', callback_data='no')
     keyboard.add(key_no)
-    bot.send_message(message.chat.id, text='Выполнить анализ по тегу {} ?'.format(tag), reply_markup=keyboard)
+    bot.send_message(message.chat.id, text='Выполнить анализ?', reply_markup=keyboard)
 
 def analyze(call_message):
     if (not input_parms.is_exists_all_parms()):

@@ -15,6 +15,7 @@ class InputParms():
     start_period_calculation = ''
     end_period_calculation = ''
     period_holding = ''
+    tag = ''
 
     def set_start_strategy(self, start_strategy):
         self.start_strategy = start_strategy
@@ -31,12 +32,16 @@ class InputParms():
     def set_period_holding(self, period_holding):
         self.period_holding = period_holding
 
+    def set_tag(self, tag):
+        self.tag = tag
+
     def get_log(self):
         print(f'дата начала проверки стратегии: {self.start_strategy}')
         print(f'дата окончания проверки стратегии: {self.end_strategy}')
         print(f'дата начала периода для расчета: {self.start_period_calculation}')
         print(f'дата окончания периода для расчета: {self.end_period_calculation}')
         print(f'период данных для удержания позиции: {self.period_holding}')
+        print(f'выбранный тег: {self.tag}')
 
     def get_string(self):
         parms = []
@@ -46,10 +51,11 @@ class InputParms():
         parms.append(f'дата начала периода для расчета: {self.start_period_calculation}')
         parms.append(f'дата окончания периода для расчета: {self.end_period_calculation}')
         parms.append(f'период данных для удержания позиции: {self.period_holding}')
+        parms.append(f'выбранный тег: {self.tag}')
         return '\n'.join(parms)
 
     def is_exists_all_parms(self):
-        return (self.start_strategy != '' and self.end_strategy != '' and self.start_period_calculation != '' and self.end_period_calculation != '' and self.period_holding != '')
+        return (self.start_strategy != '' and self.end_strategy != '' and self.start_period_calculation != '' and self.end_period_calculation != '' and self.period_holding != '' and self.tag != '')
 
 
 def startCmd(message):
@@ -155,17 +161,46 @@ def get_period_holding(message):
     try:
         x = int(message.text)
         input_parms.set_period_holding(x)
-        bot.send_message(message.from_user.id, "Ввод параметров завершен.");
-
-        keyboard = types.InlineKeyboardMarkup()
-        key_yes = types.InlineKeyboardButton(text='Да', callback_data='yes')
-        keyboard.add(key_yes)
-        key_no = types.InlineKeyboardButton(text='Нет', callback_data='no')
-        keyboard.add(key_no)
-        bot.send_message(message.from_user.id, text='Выполнить анализ?', reply_markup=keyboard)
+        get_tag(message)
     except ValueError:
         bot.send_message(message.from_user.id, "Неверное значение. Ожидается число")
         bot.register_next_step_handler(message, get_period_holding)
+
+
+def get_tag(message):
+    try:
+        db = DataBase(db_config['USER_mysql'],
+                      db_config['PW_mysql'],
+                      db_config['DB_mysql'],
+                      db_config['HOST_mysql'])
+
+        data = db.select_top10_tags()
+        tags = data['tag']
+        companies = data['company']
+
+        keyboard = types.InlineKeyboardMarkup()
+
+        for i in range(0, len(tags) - 1):
+            text = '{} - {}'.format(tags[i], companies[i])
+            callback_data = 'tag:{}'.format(tags[i])
+            key = types.InlineKeyboardButton(text=text, callback_data=callback_data)
+            keyboard.add(key)
+
+        bot.send_message(message.from_user.id, text='Выберите тег компании:', reply_markup=keyboard)
+    except ValueError:
+        bot.send_message(message.from_user.id, "Произошла ошибка при выборе тега. Повторите попытку")
+        bot.register_next_step_handler(message, get_tag)
+
+
+def final_step_before_run_analyze(message, tag):
+    input_parms.set_tag(tag)
+
+    keyboard = types.InlineKeyboardMarkup()
+    key_yes = types.InlineKeyboardButton(text='Да', callback_data='yes')
+    keyboard.add(key_yes)
+    key_no = types.InlineKeyboardButton(text='Нет', callback_data='no')
+    keyboard.add(key_no)
+    bot.send_message(message.chat.id, text='Выполнить анализ по тегу {} ?'.format(tag), reply_markup=keyboard)
 
 def analyze(call_message):
     if (not input_parms.is_exists_all_parms()):
@@ -194,6 +229,8 @@ bot = telebot.TeleBot(token)
 def callback_worker(call):
     if call.data == "yes":  # call.data это callback_data, которая указана при объявлении кнопки
         analyze(call.message)
+    elif call.data.startswith("tag:"):
+        final_step_before_run_analyze(call.message, call.data[4:])
     else:
         bot.send_message(call.message.chat.id, 'Хорошо, значит в другой раз')
 

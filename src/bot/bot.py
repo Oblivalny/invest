@@ -148,7 +148,9 @@ def helpCmd(message):
     bot.send_message(message.from_user.id, f"""А вот и прогноз  {test.model.pred}""")
 
     plt.plot(test.model.pred)
-    plt.ylabel('Prediction')
+    plt.title("Prediction {}".format(input_parms.tag))
+    plt.xlabel('day')
+    plt.ylabel('price')
     plt.savefig('plot.png')
     plt.clf()
 

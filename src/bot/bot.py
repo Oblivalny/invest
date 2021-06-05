@@ -111,47 +111,15 @@ def startCmd(message):
 def helpCmd(message):
     bot.send_message(message.from_user.id, "Чем я могу тебе помочь?")
 
-    tag = 'AACG'
-    start_strategy = datetime(2021, 4, 1, 0, 0, 0)
-    end_strategy = datetime(2021, 5, 1, 0, 0, 0)
-    period_calculation_start = datetime(2010, 4, 1, 0, 0, 0)
-    period_calculation_end = datetime(2021, 5, 1, 0, 0, 0)
-    period_holding = 2
+    input_parms.set_tag('AACG')
+    input_parms.set_start_strategy(datetime(2021, 4, 1, 0, 0, 0))
+    input_parms.set_end_strategy(datetime(2021, 5, 1, 0, 0, 0))
+    input_parms.set_start_period_calculation(datetime(2010, 4, 1, 0, 0, 0))
+    input_parms.set_end_period_calculation(datetime(2021, 5, 1, 0, 0, 0))
+    input_parms.set_period_holding(2)
 
-    test = Assets(
-        tag,
-        start_strategy,
-        end_strategy,
-        period_calculation_start,
-        period_calculation_end,
-        period_holding
-    )
-    db = DataBase(db_config['USER_mysql'],
-                  db_config['PW_mysql'],
-                  db_config['DB_mysql'],
-                  db_config['HOST_mysql'])
+    analyze(message)
 
-    test.calculation_balance(db, 5)
-
-    bot.send_message(message.from_user.id, f"""А вот и прогноз  {test.model.pred}""")
-
-    plt.plot(test.model.pred)
-    plt.title("Prediction {}".format(input_parms.tag))
-    plt.xlabel('day')
-    plt.ylabel('price')
-    plt.savefig('plot.png')
-    plt.clf()
-
-    bot.send_photo(message.chat.id, open('plot.png','rb'))
-
-    stats = []
-    stats.append(f'Расширенная статистика')
-    stats.append(f'Математическое ожидание: {round(np.mean(test.model.pred),2)}')
-    stats.append(f'Дисперсия: {round(np.var(test.model.pred),2)}')
-    stats.append(f'Максимальная просадка: {round(test.maximum, 2)}')
-
-    result = '\n'.join(stats)
-    bot.send_message(message.from_user.id, f'{result}')
 
 def getParamsCmd(message):
     bot.send_message(message.from_user.id, input_parms.get_string())
@@ -275,14 +243,50 @@ def final_step_before_run_analyze(message, tag):
     keyboard.add(key_no)
     bot.send_message(message.chat.id, text='Выполнить анализ?', reply_markup=keyboard)
 
-def analyze(call_message):
+def analyze(message):
     if (not input_parms.is_exists_all_parms()):
-        bot.send_message(call_message.chat.id, 'Введены не все входные параметры.')
+        bot.send_message(message.chat.id, 'Введены не все входные параметры.')
         return
 
-    # do something and return plots
+    asset = Assets(
+        input_parms.tag,
+        input_parms.start_strategy,
+        input_parms.end_strategy,
+        input_parms.start_period_calculation,
+        input_parms.end_period_calculation,
+        input_parms.period_holding
+    )
+    db = DataBase(db_config['USER_mysql'],
+                  db_config['PW_mysql'],
+                  db_config['DB_mysql'],
+                  db_config['HOST_mysql'])
 
-    bot.send_message(call_message.chat.id, 'Анализ завершен')
+    asset.calculation_balance(db, 5)
+
+    bot.send_message(message.chat.id, f"""А вот и прогноз  {asset.model.pred}""")
+
+    #pred = [5.271008, 4.8375616, 4.7112055, 4.7095904, 4.663491, 4.8370857, 4.43386, 4.6360106, 4.548301, 4.257497, 4.5321016, 4.1472836, 4.423401, 4.324655, 4.3291464, 4.033216, 4.125738, 3.9469614, 3.7717185, 3.5752578, 3.7787712, 3.6818018, 3.403657, 3.4119859, 3.3784256, 3.6460066, 3.3787456, 3.640217, 3.4635334, 3.5461364]
+    pred = asset.model.pred
+
+    plt.plot(pred)
+    plt.title("Prediction {}".format(input_parms.tag))
+    plt.xlabel('day')
+    plt.ylabel('price')
+    plt.savefig('plot.png')
+    plt.clf()
+
+    bot.send_photo(message.chat.id, open('plot.png', 'rb'))
+
+    stats = []
+    stats.append(f'Расширенная статистика')
+    stats.append(f'Математическое ожидание: {round(np.mean(pred), 2)}')
+    stats.append(f'Дисперсия: {round(np.var(pred), 2)}')
+    stats.append(f'Максимальная просадка: {round(asset.get_maximum_drawdown(pred), 2)}')
+
+    result = '\n'.join(stats)
+    bot.send_message(message.chat.id, f'{result}')
+
+    bot.send_message(message.chat.id, 'Анализ завершен')
 
 
 botCmds = {

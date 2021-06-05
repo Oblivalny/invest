@@ -13,7 +13,6 @@ class Assets(object):
         self.period_calculation_end = period_calculation_end
         self.period_holding = period_holding
         self.balance = None
-        self.maximum_drawdown = None
         self.model = None
 
     def calculation_balance(self, db, assets_cnt):

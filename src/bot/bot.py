@@ -149,7 +149,7 @@ def get_end_strategy(message):
         if not input_parms.validate_start_end_strategy():
             raise StartDateMoreEndDateError
 
-        bot.send_message(message.from_user.id, "Дата начала периода для удержания позиции:");
+        bot.send_message(message.from_user.id, "Дата начала периода для расчета:");
         bot.register_next_step_handler(message, get_start_period_calculation)
     except ValueError:
         bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
@@ -168,13 +168,13 @@ def get_start_period_calculation(message):
         if not input_parms.validate_start_period_calculation():
             raise DateOutsidePeriodError
 
-        bot.send_message(message.from_user.id, "Дата окончания периода для удержания позиции:");
+        bot.send_message(message.from_user.id, "Дата окончания периода для расчета:");
         bot.register_next_step_handler(message, get_end_period_calculation)
     except ValueError:
         bot.send_message(message.from_user.id, "Неверный формат даты. Ожидается DD.MM.YYYY")
         bot.register_next_step_handler(message, get_start_period_calculation)
     except DateOutsidePeriodError:
-        bot.send_message(message.from_user.id, "Дата начала периода для удержания позиции должна быть меньше периода "
+        bot.send_message(message.from_user.id, "Дата начала периода для расчета должна быть меньше периода "
                                                "проверки стратегии")
         bot.register_next_step_handler(message, get_start_period_calculation)
 
@@ -194,7 +194,7 @@ def get_end_period_calculation(message):
         bot.register_next_step_handler(message, get_end_period_calculation)
     except DateOutsidePeriodError:
         bot.send_message(message.from_user.id, "Период проверки стратегии должен находиться внутри периода для "
-                                               "удержания позиции")
+                                               "расчета")
         bot.register_next_step_handler(message, get_end_period_calculation)
 
 
